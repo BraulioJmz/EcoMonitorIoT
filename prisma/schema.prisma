@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique @db.VarChar(50)
+  email         String    @unique @db.VarChar(100)
+  password_hash String    @db.VarChar(255)
+  role          String?   @default("user") @db.VarChar(20)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model alertas {
+  id          Int       @id(map: "alertas_pkey1") @default(autoincrement())
+  titulo      String    @db.VarChar(100)
+  descripcion String
+  tipo        String    @db.VarChar(50)
+  severidad   String    @db.VarChar(20)
+  maquina_id  Int?
+  fecha       DateTime? @default(now()) @db.Timestamp(6)
+  leida       Boolean?  @default(false)
+  eliminada   Boolean?  @default(false)
+  maquinas    maquinas? @relation(fields: [maquina_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([leida, eliminada], map: "ix_alertas_estado")
+  @@index([fecha(sort: Desc)], map: "ix_alertas_fecha")
+}
+
+model configuracion_alertas {
+  id                     Int       @id(map: "alertas_pkey") @default(autoincrement())
+  email_notificaciones   Boolean?  @default(false)
+  umbral_potencia        Float
+  umbral_factor_potencia Float
+  umbral_energia         Float
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+  updated_at             DateTime? @default(now()) @db.Timestamp(6)
+  hora_inicio_minutos    Int?      @default(450)
+  hora_fin_minutos       Int?      @default(1170)
+}
+
+model current_measurements {
+  id            BigInt   @id @default(autoincrement())
+  timestamp     DateTime @db.Timestamptz(6)
+  device_id     String   @db.VarChar(50)
+  current_a     Decimal? @db.Decimal(8, 4)
+  samples_count Int?
+
+  @@index([device_id], map: "ix_current_measurements_device_id")
+  @@index([timestamp(sort: Desc)], map: "ix_current_measurements_timestamp")
+}
+
+// Registro de las 3 máquinas del demo (br01, br02, br03)
+model maquinas {
+  id              Int       @id @default(autoincrement())
+  nombre          String    @db.VarChar(255)
+  codigo_branch   String    @unique @db.VarChar(100)
+  ct_ratio        String    @db.VarChar(20)
+  potencia_maxima Float
+  estado          Boolean?  @default(true)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  favorita        Boolean
+  alertas         alertas[]
+}
+
+model power_measurements {
+  id                       BigInt   @id @default(autoincrement())
+  timestamp                DateTime @db.Timestamptz(6)
+  device_id                String   @db.VarChar(50)
+  branch_id                String?  @db.VarChar(50)
+  power_kw                 Decimal? @db.Decimal(10, 6)
+  accumulated_kwh          Decimal? @db.Decimal(12, 6)
+  accumulated_kwh_imported Decimal? @db.Decimal(12, 6)
+  accumulated_kwh_exported Decimal? @db.Decimal(12, 6)
+
+  @@index([device_id], map: "ix_power_measurements_device_id")
+  @@index([timestamp(sort: Desc)], map: "ix_power_measurements_timestamp")
+}
+
+model tarifas {
+  id           Int       @id @default(autoincrement())
+  tarifa_pico  Float
+  tarifa_valle Float
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
+  factor_co2   Float     @default(0.444)
+}
+
+model reporte_emails {
+  id         Int       @id @default(autoincrement())
+  email      String    @db.VarChar(100)
+  nombre     String?   @db.VarChar(100)
+  activo     Boolean   @default(true)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([activo], map: "idx_reporte_emails_activo")
+}
+
+model voltage_measurements {
+  id            BigInt   @id @default(autoincrement())
+  timestamp     DateTime @db.Timestamptz(6)
+  device_id     String   @db.VarChar(50)
+  voltage_v     Decimal? @db.Decimal(8, 3)
+  samples_count Int?
+
+  @@index([device_id], map: "ix_voltage_measurements_device_id")
+  @@index([timestamp(sort: Desc)], map: "ix_voltage_measurements_timestamp")
+}
+
+model watts_measurements {
+  id        BigInt   @id @default(autoincrement())
+  timestamp DateTime @db.Timestamptz(6)
+  device_id String   @db.VarChar(50)
+  watts     Decimal? @db.Decimal(10, 3)
+
+  @@index([device_id], map: "ix_watts_measurements_device_id")
+  @@index([timestamp(sort: Desc)], map: "ix_watts_measurements_timestamp")
+}
+
+// Promedio de 5 minutos — Máquina 1
+model branch_br01_avg5m {
+  timestamp               DateTime @id @db.Timestamptz(6)
+  equivalent_voltage      Decimal? @db.Decimal(8, 3)
+  equivalent_current      Decimal? @db.Decimal(10, 2)
+  samples_count           Int?
+  watts                   Decimal? @db.Decimal(12, 3)
+  equivalent_active_power Decimal? @db.Decimal(12, 6)
+  active_power_l1         Decimal? @db.Decimal(12, 6)
+  active_power_l2         Decimal? @db.Decimal(12, 6)
+  active_power_l3         Decimal? @db.Decimal(12, 6)
+  voltage_l1_l2           Decimal? @db.Decimal(8, 3)
+  voltage_l2_l3           Decimal? @db.Decimal(8, 3)
+  voltage_l3_l1           Decimal? @db.Decimal(8, 3)
+
+  @@index([timestamp(sort: Desc)], map: "ix_branch_br01_avg5m_ts")
+}
+
+// Promedio de 5 minutos — Máquina 2
+model branch_br02_avg5m {
+  timestamp               DateTime @id @db.Timestamptz(6)
+  equivalent_voltage      Decimal? @db.Decimal(8, 3)
+  equivalent_current      Decimal? @db.Decimal(10, 2)
+  samples_count           Int?
+  watts                   Decimal? @db.Decimal(12, 3)
+  equivalent_active_power Decimal? @db.Decimal(12, 6)
+  active_power_l1         Decimal? @db.Decimal(12, 6)
+  active_power_l2         Decimal? @db.Decimal(12, 6)
+  active_power_l3         Decimal? @db.Decimal(12, 6)
+  voltage_l1_l2           Decimal? @db.Decimal(8, 3)
+  voltage_l2_l3           Decimal? @db.Decimal(8, 3)
+  voltage_l3_l1           Decimal? @db.Decimal(8, 3)
+
+  @@index([timestamp(sort: Desc)], map: "ix_branch_br02_avg5m_ts")
+}
+
+// Promedio de 5 minutos — Máquina 3
+model branch_br03_avg5m {
+  timestamp               DateTime @id @db.Timestamptz(6)
+  equivalent_voltage      Decimal? @db.Decimal(8, 3)
+  equivalent_current      Decimal? @db.Decimal(10, 2)
+  samples_count           Int?
+  watts                   Decimal? @db.Decimal(12, 3)
+  equivalent_active_power Decimal? @db.Decimal(12, 6)
+  active_power_l1         Decimal? @db.Decimal(12, 6)
+  active_power_l2         Decimal? @db.Decimal(12, 6)
+  active_power_l3         Decimal? @db.Decimal(12, 6)
+  voltage_l1_l2           Decimal? @db.Decimal(8, 3)
+  voltage_l2_l3           Decimal? @db.Decimal(8, 3)
+  voltage_l3_l1           Decimal? @db.Decimal(8, 3)
+
+  @@index([timestamp(sort: Desc)], map: "ix_branch_br03_avg5m_ts")
+}
+
+// Energía acumulada — solo 3 máquinas (br01, br02, br03)
+model branch_kwh_accumulated {
+  id                            BigInt   @id @default(autoincrement())
+  timestamp                     DateTime @db.Timestamptz(6)
+  kwh_accumulated_br01          Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br01_imported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br01_exported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br02          Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br02_imported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br02_exported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br03          Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br03_imported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br03_exported Decimal? @db.Decimal(12, 6)
+
+  @@index([timestamp(sort: Desc)], map: "ix_branch_kwh_accumulated_timestamp")
+}
+
+// Totales diarios de energía — solo 3 máquinas
+model branch_kwh_daily_totals {
+  day                           DateTime @id @db.Date
+  kwh_accumulated_br01          Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br01_imported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br01_exported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br02          Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br02_imported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br02_exported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br03          Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br03_imported Decimal? @db.Decimal(12, 6)
+  kwh_accumulated_br03_exported Decimal? @db.Decimal(12, 6)
+  updated_at                    DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model daily_energy_totals {
+  device_id          String   @db.VarChar(50)
+  day                DateTime @db.Date
+  total_kwh          Decimal  @db.Decimal(12, 6)
+  last_sample_ts     DateTime @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+  total_kwh_imported Decimal? @db.Decimal(12, 6)
+  total_kwh_exported Decimal? @db.Decimal(12, 6)
+
+  @@id([device_id, day])
+  @@index([device_id, day], map: "ix_daily_energy_totals_device_day")
+}
+
+// Corriente por fase — solo 3 máquinas (br01, br02, br03)
+model line_current_matrix {
+  id              BigInt   @id @default(autoincrement())
+  timestamp       DateTime @unique @db.Timestamptz(6)
+  br01_current_l1 Decimal? @db.Decimal(8, 4)
+  br01_current_l2 Decimal? @db.Decimal(8, 4)
+  br01_current_l3 Decimal? @db.Decimal(8, 4)
+  br02_current_l1 Decimal? @db.Decimal(8, 4)
+  br02_current_l2 Decimal? @db.Decimal(8, 4)
+  br02_current_l3 Decimal? @db.Decimal(8, 4)
+  br03_current_l1 Decimal? @db.Decimal(8, 4)
+  br03_current_l2 Decimal? @db.Decimal(8, 4)
+  br03_current_l3 Decimal? @db.Decimal(8, 4)
+  samples_count   Int?
+
+  @@index([timestamp(sort: Desc)], map: "ix_line_current_matrix_timestamp")
+}
+
+model power_factor_measurements {
+  id            BigInt   @id @default(autoincrement())
+  timestamp     DateTime @db.Timestamptz(6)
+  device_id     String   @db.VarChar(50)
+  power_factor  Decimal? @db.Decimal(6, 4)
+  samples_count Int?
+
+  @@index([device_id], map: "ix_power_factor_measurements_device_id")
+  @@index([timestamp(sort: Desc)], map: "ix_power_factor_measurements_timestamp")
+}
+
+model alertas_email_log {
+  alerta_id     Int      @id
+  enviado_en    DateTime @default(now()) @db.Timestamptz(6)
+  destinatarios String?
+}

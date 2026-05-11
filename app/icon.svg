@@ -1,0 +1,28 @@
+<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="72" height="72" rx="14" fill="#0f172a"/>
+  <!-- Leaf shape -->
+  <path d="M22 46C22 46 24 28 36 20C48 28 50 46 50 46" stroke="url(#leafGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M36 20C36 20 32 30 30 38C28 46 22 46 22 46" fill="url(#leafFill)" opacity="0.25"/>
+  <path d="M36 20C36 20 40 30 42 38C44 46 50 46 50 46" fill="url(#leafFill)" opacity="0.25"/>
+  <!-- Central vein / lightning bolt -->
+  <path d="M38 22L33 34H39L34 48" stroke="url(#boltGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Small leaf veins -->
+  <path d="M36 28L30 36" stroke="#10b981" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+  <path d="M36 28L42 36" stroke="#0d9488" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+  <path d="M36 34L28 42" stroke="#10b981" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+  <path d="M36 34L44 42" stroke="#0d9488" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+  <defs>
+    <linearGradient id="leafGrad" x1="22" y1="20" x2="50" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10b981"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="leafFill" x1="22" y1="20" x2="50" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10b981"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="34" y1="22" x2="38" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+</svg>

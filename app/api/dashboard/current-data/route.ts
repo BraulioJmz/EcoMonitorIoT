@@ -156,40 +156,33 @@ export async function GET(request: NextRequest) {
         }
       })
     } else {
-      // Sin máquinas seleccionadas (todas las máquinas), usar line_current_matrix sumando br01+br02+br03
+      // Sin máquinas seleccionadas — sumar corrientes de br01 + br02 + br03
       console.log('🔍 Corriente - Consultando line_current_matrix para todas las máquinas...')
       const rows = await prisma.line_current_matrix.findMany({
         where: { timestamp: { gte: start, lte: end } },
         orderBy: { timestamp: 'asc' },
-        select: { 
-          br01_current_l1: true,
-          br01_current_l2: true,
-          br01_current_l3: true,
-          br02_current_l1: true,
-          br02_current_l2: true,
-          br02_current_l3: true,
-          br03_current_l1: true,
-          br03_current_l2: true,
-          br03_current_l3: true,
-          timestamp: true 
+        select: {
+          br01_current_l1: true, br01_current_l2: true, br01_current_l3: true,
+          br02_current_l1: true, br02_current_l2: true, br02_current_l3: true,
+          br03_current_l1: true, br03_current_l2: true, br03_current_l3: true,
+          timestamp: true
         }
       })
       console.log(`  📈 line_current_matrix: ${rows.length} mediciones`)
       allMeasurements = rows.map(r => {
-        // Sumar las 3 máquinas por línea
         const l1 = (Number(r.br01_current_l1) || 0) + (Number(r.br02_current_l1) || 0) + (Number(r.br03_current_l1) || 0)
         const l2 = (Number(r.br01_current_l2) || 0) + (Number(r.br02_current_l2) || 0) + (Number(r.br03_current_l2) || 0)
         const l3 = (Number(r.br01_current_l3) || 0) + (Number(r.br02_current_l3) || 0) + (Number(r.br03_current_l3) || 0)
-        const average = (l1 + l2 + l3) / 3
-        return { 
-          current: average,
+        return {
+          current: (l1 + l2 + l3) / 3,
           line1: l1,
           line2: l2,
           line3: l3,
-          timestamp: r.timestamp 
+          timestamp: new Date(r.timestamp)
         }
       })
     }
+
 
     // Obtener horario configurado desde la BD
     const chartTimeRange = await getChartTimeRange()
@@ -292,14 +285,7 @@ export async function GET(request: NextRequest) {
         }
         return null
       })
-      .filter((i): i is {
-        timestamp: string
-        current: number
-        line1?: number | null
-        line2?: number | null
-        line3?: number | null
-        bucketIndex: number
-      } => i !== null)
+      .filter((i): i is NonNullable<typeof i> => i !== null)
 
     const finalData = data.length > targetPoints
       ? (() => {
